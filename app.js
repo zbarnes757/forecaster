@@ -4,6 +4,7 @@
 var https = require('https');
 var api = require('./api');
 
+// Get longitude and latitude
 function getLongLat(zipcode) {
   var request = https.get('https://maps.googleapis.com/maps/api/geocode/json?address=' + zipcode + '&key=' + api.google, function (response) {
     response.setEncoding('utf8');
@@ -14,16 +15,20 @@ function getLongLat(zipcode) {
     });
 
     response.on('end', function () {
-      jsonBody = JSON.parse(body);
-      getWeather(jsonBody.results[0].geometry.location);
+      try {
+        jsonBody = JSON.parse(body);
+        getWeather(jsonBody.results[0].geometry.location);
+      } catch (error) {
+        // Parse error
+        printError(e);
+      }
     });
   });
 
-  request.on('error', function (error) {
-    console.error(error.message);
-  });
+  request.on('error', printError);
 }
 
+// Get the forecast
 function getWeather(coordinateObj) {
   var request = https.get('https://api.forecast.io/forecast/' + api.forecast +  '/' + coordinateObj.lat + ',' + coordinateObj.lng, function(response) {
     response.setEncoding('utf8');
@@ -34,18 +39,26 @@ function getWeather(coordinateObj) {
     });
 
     response.on('end', function () {
-      jsonBody = JSON.parse(body);
-      printMessage(jsonBody.daily.summary);
+      try {
+        jsonBody = JSON.parse(body);
+        printMessage(jsonBody.daily.summary);
+      } catch (e) {
+        printError(e);
+      }
     });
   });
 
-  request.on('error', function (error) {
-    console.error(error.message);
-  });
+  request.on('error', printError);
 }
 
+// Print the forecast
 function printMessage(summary) {
   console.log('The forecast for your specified area is: ' + summary);
+}
+
+// Print out error messages
+function printError(error) {
+  console.error(error.message);
 }
 
 getLongLat(process.argv[2]);
